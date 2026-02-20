@@ -1,0 +1,103 @@
+.container {
+  min-height: 100%;
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.titleSection h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1f1f1f;
+}
+.titleSection .subtitle {
+  color: #8c8c8c;
+  font-size: 14px;
+  margin-top: 4px;
+  display: block;
+}
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 8px;
+}
+.tableWrapper {
+  background: #fff;
+  border-radius: 8px;
+}
+.hotelInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.hotelImage {
+  flex-shrink: 0;
+}
+.hotelImage .noImage {
+  width: 80px;
+  height: 60px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8c8c8c;
+  font-size: 12px;
+}
+.hotelDetails {
+  flex: 1;
+  min-width: 0;
+}
+.hotelName {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.hotelMeta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.roomList .ant-card {
+  border: 1px solid #f0f0f0;
+  transition: all 0.3s;
+}
+.roomList .ant-card:hover {
+  border-color: #1890ff;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.1);
+}
+.nearbyItem {
+  padding: 8px 0;
+  border-bottom: 1px dashed #f0f0f0;
+}
+.nearbyItem:last-child {
+  border-bottom: none;
+}
+.discountList .ant-card {
+  transition: all 0.3s;
+}
+.discountList .ant-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(250, 173, 20, 0.2);
+}
+:global .ant-table-thead > tr > th {
+  background: #fafafa;
+  font-weight: 600;
+}
+:global .ant-table-tbody > tr:hover > td {
+  background: #f6f8fc;
+}
+:global .ant-btn-link {
+  padding: 0 8px;
+}
