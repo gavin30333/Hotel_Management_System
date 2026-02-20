@@ -34,6 +34,7 @@ import {
 } from '@ant-design/icons';
 import { useSearchParams } from 'react-router-dom';
 import HotelEditModal from '../components/HotelEditModal';
+import { hotelApi } from '../../../utils/api';
 import styles from './index.less';
 
 const { Search } = Input;
@@ -41,108 +42,9 @@ const { Option } = Select;
 const { TabPane } = Tabs;
 const { Text, Title } = Typography;
 
-const mockHotels: Hotel[] = [
-  {
-    id: 1,
-    name: '阳光大酒店',
-    nameEn: 'Sunshine Grand Hotel',
-    address: '上海市浦东新区世纪大道100号',
-    starRating: 5,
-    phone: '021-12345678',
-    description: '五星级豪华酒店，提供优质的住宿服务和餐饮体验。酒店拥有各类豪华客房，配备完善的会议设施和健身中心。',
-    images: ['https://via.placeholder.com/400x300', 'https://via.placeholder.com/400x300'],
-    status: 'online',
-    auditStatus: 'passed',
-    createTime: '2024-01-01 10:00:00',
-    openingDate: '2020-06-15',
-    roomTypes: [
-      { id: 1, name: '豪华大床房', nameEn: 'Deluxe King Room', price: 688, originalPrice: 888, area: 45, bedType: '大床2.0m', maxOccupancy: 2, breakfast: true },
-      { id: 2, name: '行政套房', nameEn: 'Executive Suite', price: 1288, originalPrice: 1588, area: 75, bedType: '大床2.0m', maxOccupancy: 3, breakfast: true },
-    ],
-    nearbyAttractions: [
-      { name: '东方明珠', distance: '1.5公里', description: '上海地标性建筑' },
-      { name: '外滩', distance: '2公里', description: '历史风貌区' },
-    ],
-    transportations: [
-      { type: 'subway', name: '地铁2号线陆家嘴站', distance: '500米' },
-      { type: 'airport', name: '浦东国际机场', distance: '35公里' },
-    ],
-    shoppingMalls: [
-      { name: '正大广场', distance: '800米', description: '大型购物中心' },
-    ],
-    discounts: [
-      { id: 1, name: '新用户专享', type: 'fixed', value: 100, conditions: '满500可用', description: '新用户首单立减100元' },
-    ],
-    facilities: ['免费WiFi', '游泳池', '健身房', '停车场', '餐厅', '会议室', 'SPA'],
-    policies: {
-      checkIn: '14:00后',
-      checkOut: '12:00前',
-      cancellation: '入住前1天可免费取消',
-      extraBed: '加床收费200元/晚',
-      pets: '不允许携带宠物',
-    },
-  },
-  {
-    id: 2,
-    name: '海景度假酒店',
-    nameEn: 'Seaview Resort Hotel',
-    address: '海南省三亚市海棠湾88号',
-    starRating: 5,
-    phone: '0898-87654321',
-    description: '位于海边的度假酒店，享受无敌海景。',
-    images: ['https://via.placeholder.com/400x300'],
-    status: 'pending',
-    auditStatus: undefined,
-    createTime: '2024-01-15 14:30:00',
-    openingDate: '2022-03-01',
-    roomTypes: [
-      { id: 1, name: '海景房', price: 1588, area: 55, bedType: '大床2.0m', breakfast: true },
-    ],
-    nearbyAttractions: [
-      { name: '蜈支洲岛', distance: '5公里', description: '潜水胜地' },
-    ],
-    facilities: ['免费WiFi', '游泳池', '私人海滩', 'SPA'],
-  },
-  {
-    id: 3,
-    name: '城市精品酒店',
-    nameEn: 'City Boutique Hotel',
-    address: '北京市朝阳区建国路50号',
-    starRating: 4,
-    phone: '010-55556666',
-    description: '城市中心的精品酒店，交通便利。',
-    images: ['https://via.placeholder.com/400x300'],
-    status: 'offline',
-    auditStatus: 'rejected',
-    auditReason: '酒店图片不符合要求，请重新上传高清图片',
-    createTime: '2024-01-10 09:00:00',
-    openingDate: '2019-08-20',
-    roomTypes: [
-      { id: 1, name: '标准间', price: 388, area: 30, bedType: '双床1.2m' },
-    ],
-  },
-  {
-    id: 4,
-    name: '商务快捷酒店',
-    nameEn: 'Business Express Hotel',
-    address: '广州市天河区体育西路20号',
-    starRating: 3,
-    phone: '020-77778888',
-    description: '经济实惠的商务酒店，适合出差。',
-    images: ['https://via.placeholder.com/400x300'],
-    status: 'draft',
-    createTime: '2024-01-20 16:00:00',
-    openingDate: '2021-05-10',
-    roomTypes: [
-      { id: 1, name: '经济房', price: 198, area: 20, bedType: '大床1.8m' },
-    ],
-  },
-];
-
 const HotelListPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [hotels, setHotels] = useState<Hotel[]>(mockHotels);
-  const [filteredHotels, setFilteredHotels] = useState<Hotel[]>(mockHotels);
+  const [hotels, setHotels] = useState<Hotel[]>([]);
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [starFilter, setStarFilter] = useState<string>('all');
@@ -152,10 +54,40 @@ const HotelListPage: React.FC = () => {
   const [detailDrawerVisible, setDetailDrawerVisible] = useState(false);
   const [currentHotel, setCurrentHotel] = useState<Hotel | null>(null);
   const [auditReason, setAuditReason] = useState('');
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
 
   const user = localStorage.getItem('currentUser');
   const userData = user ? JSON.parse(user) : { role: 'merchant' };
   const isAdmin = userData.role === 'admin';
+
+  const fetchHotels = async () => {
+    setLoading(true);
+    try {
+      const response = await hotelApi.getList({
+        page: pagination.current,
+        pageSize: pagination.pageSize,
+        status: statusFilter,
+        starRating: starFilter,
+        keyword: searchText,
+      });
+
+      if (response.success && response.data) {
+        setHotels(response.data);
+        setPagination(prev => ({
+          ...prev,
+          total: response.total || 0,
+        }));
+      }
+    } catch (error: any) {
+      message.error(error.message || '获取酒店列表失败');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const action = searchParams.get('action');
@@ -167,26 +99,8 @@ const HotelListPage: React.FC = () => {
   }, [searchParams, setSearchParams]);
 
   useEffect(() => {
-    let result = [...hotels];
-    
-    if (statusFilter !== 'all') {
-      result = result.filter(hotel => hotel.status === statusFilter);
-    }
-
-    if (starFilter !== 'all') {
-      result = result.filter(hotel => hotel.starRating === Number(starFilter));
-    }
-    
-    if (searchText) {
-      result = result.filter(hotel => 
-        hotel.name.includes(searchText) || 
-        hotel.nameEn?.toLowerCase().includes(searchText.toLowerCase()) ||
-        hotel.address.includes(searchText)
-      );
-    }
-    
-    setFilteredHotels(result);
-  }, [hotels, statusFilter, starFilter, searchText]);
+    fetchHotels();
+  }, [pagination.current, pagination.pageSize, statusFilter, starFilter]);
 
   const getStatusTag = (status: string, auditStatus?: string) => {
     const statusMap: Record<string, { color: string; text: string }> = {
@@ -223,25 +137,14 @@ const HotelListPage: React.FC = () => {
   const confirmAudit = async (hotel: Hotel, passed: boolean, reason?: string) => {
     setLoading(true);
     try {
-      await new Promise((resolve) => { setTimeout(resolve, 1000); });
-      
-      setHotels(prev => prev.map(h => {
-        if (h.id === hotel.id) {
-          return {
-            ...h,
-            auditStatus: passed ? 'passed' : 'rejected',
-            status: passed ? 'online' : 'offline',
-            auditReason: reason,
-            updateTime: new Date().toLocaleString(),
-          };
-        }
-        return h;
-      }));
-      
-      message.success(passed ? '审核通过，酒店已上线' : '审核驳回');
-      setAuditModalVisible(false);
-    } catch (error) {
-      message.error('操作失败，请重试');
+      const response = await hotelApi.audit(hotel._id, passed, reason);
+      if (response.success) {
+        message.success(passed ? '审核通过，酒店已上线' : '审核驳回');
+        setAuditModalVisible(false);
+        fetchHotels();
+      }
+    } catch (error: any) {
+      message.error(error.message || '操作失败，请重试');
     } finally {
       setLoading(false);
     }
@@ -260,22 +163,13 @@ const HotelListPage: React.FC = () => {
   const handlePublish = async (hotel: Hotel) => {
     setLoading(true);
     try {
-      await new Promise((resolve) => { setTimeout(resolve, 1000); });
-      
-      setHotels(prev => prev.map(h => {
-        if (h.id === hotel.id) {
-          return {
-            ...h,
-            status: 'pending',
-            updateTime: new Date().toLocaleString(),
-          };
-        }
-        return h;
-      }));
-      
-      message.success('已提交审核');
-    } catch (error) {
-      message.error('提交失败，请重试');
+      const response = await hotelApi.submitForAudit(hotel._id);
+      if (response.success) {
+        message.success('已提交审核');
+        fetchHotels();
+      }
+    } catch (error: any) {
+      message.error(error.message || '提交失败，请重试');
     } finally {
       setLoading(false);
     }
@@ -284,22 +178,13 @@ const HotelListPage: React.FC = () => {
   const handleOffline = async (hotel: Hotel) => {
     setLoading(true);
     try {
-      await new Promise((resolve) => { setTimeout(resolve, 1000); });
-      
-      setHotels(prev => prev.map(h => {
-        if (h.id === hotel.id) {
-          return {
-            ...h,
-            status: 'offline',
-            updateTime: new Date().toLocaleString(),
-          };
-        }
-        return h;
-      }));
-      
-      message.success('酒店已下线');
-    } catch (error) {
-      message.error('下线失败，请重试');
+      const response = await hotelApi.toggleOnline(hotel._id);
+      if (response.success) {
+        message.success('酒店已下线');
+        fetchHotels();
+      }
+    } catch (error: any) {
+      message.error(error.message || '下线失败，请重试');
     } finally {
       setLoading(false);
     }
@@ -313,38 +198,36 @@ const HotelListPage: React.FC = () => {
   const handleEditOk = async (hotelData: Partial<Hotel>) => {
     setLoading(true);
     try {
-      await new Promise((resolve) => { setTimeout(resolve, 1000); });
-      
-      if (currentHotel?.id) {
-        setHotels(prev => prev.map(h => {
-          if (h.id === currentHotel.id) {
-            return { ...h, ...hotelData, updateTime: new Date().toLocaleString() };
-          }
-          return h;
-        }));
+      let response;
+      if (currentHotel?._id) {
+        response = await hotelApi.update(currentHotel._id, hotelData);
         message.success('酒店信息更新成功');
       } else {
-        const newHotel: Hotel = {
-          ...hotelData as Hotel,
-          id: Math.max(...hotels.map(h => h.id || 0)) + 1,
-          status: 'draft',
-          createTime: new Date().toLocaleString(),
-        };
-        setHotels(prev => [...prev, newHotel]);
+        response = await hotelApi.create(hotelData);
         message.success('酒店添加成功');
       }
       
-      setEditModalVisible(false);
-    } catch (error) {
-      message.error('保存失败，请重试');
+      if (response?.success) {
+        setEditModalVisible(false);
+        fetchHotels();
+      }
+    } catch (error: any) {
+      message.error(error.message || '保存失败，请重试');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleViewDetail = (hotel: Hotel) => {
-    setCurrentHotel(hotel);
-    setDetailDrawerVisible(true);
+  const handleViewDetail = async (hotel: Hotel) => {
+    try {
+      const response = await hotelApi.getById(hotel._id);
+      if (response.success && response.data) {
+        setCurrentHotel(response.data);
+        setDetailDrawerVisible(true);
+      }
+    } catch (error: any) {
+      message.error(error.message || '获取详情失败');
+    }
   };
 
   const renderPriceRange = (roomTypes?: RoomType[]) => {
@@ -435,9 +318,10 @@ const HotelListPage: React.FC = () => {
     },
     {
       title: '创建时间',
-      dataIndex: 'createTime',
-      key: 'createTime',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
       width: 160,
+      render: (text: string) => text ? new Date(text).toLocaleString() : '-',
     },
     {
       title: '操作',
@@ -604,7 +488,7 @@ const HotelListPage: React.FC = () => {
             {currentHotel.roomTypes && currentHotel.roomTypes.length > 0 ? (
               <div className={styles.roomList}>
                 {currentHotel.roomTypes.map((room, index) => (
-                  <Card key={room.id || index} size="small" style={{ marginBottom: 12 }}>
+                  <Card key={room._id || index} size="small" style={{ marginBottom: 12 }}>
                     <Row gutter={16}>
                       <Col span={12}>
                         <Text strong>{room.name}</Text>
@@ -718,7 +602,7 @@ const HotelListPage: React.FC = () => {
               <div className={styles.discountList}>
                 {currentHotel.discounts.map((discount, index) => (
                   <Card 
-                    key={discount.id || index} 
+                    key={discount._id || index} 
                     size="small" 
                     style={{ marginBottom: 12, background: '#fff7e6', borderColor: '#ffd591' }}
                   >
@@ -808,7 +692,7 @@ const HotelListPage: React.FC = () => {
         <div className={styles.titleSection}>
           <h2>酒店管理</h2>
           <span className={styles.subtitle}>
-            共 {filteredHotels.length} 家酒店
+            共 {pagination.total} 家酒店
             {statusFilter !== 'all' && ` · ${statusFilter === 'draft' ? '草稿' : statusFilter === 'pending' ? '待审核' : statusFilter === 'online' ? '已上线' : '已下线'}`}
           </span>
         </div>
@@ -827,13 +711,19 @@ const HotelListPage: React.FC = () => {
           placeholder="搜索酒店名称、英文名或地址"
           allowClear
           style={{ width: 320 }}
-          onSearch={setSearchText}
+          onSearch={(value) => {
+            setSearchText(value);
+            setPagination(prev => ({ ...prev, current: 1 }));
+          }}
           onChange={(e) => setSearchText(e.target.value)}
         />
         <Select
           defaultValue="all"
           style={{ width: 140 }}
-          onChange={setStatusFilter}
+          onChange={(value) => {
+            setStatusFilter(value);
+            setPagination(prev => ({ ...prev, current: 1 }));
+          }}
           placeholder="状态筛选"
         >
           <Option value="all">全部状态</Option>
@@ -845,7 +735,10 @@ const HotelListPage: React.FC = () => {
         <Select
           defaultValue="all"
           style={{ width: 140 }}
-          onChange={setStarFilter}
+          onChange={(value) => {
+            setStarFilter(value);
+            setPagination(prev => ({ ...prev, current: 1 }));
+          }}
           placeholder="星级筛选"
         >
           <Option value="all">全部星级</Option>
@@ -860,15 +753,20 @@ const HotelListPage: React.FC = () => {
       <div className={styles.tableWrapper}>
         <Table
           columns={columns}
-          dataSource={filteredHotels}
-          rowKey="id"
+          dataSource={hotels}
+          rowKey="_id"
           loading={loading}
           scroll={{ x: 1300 }}
           pagination={{
-            pageSize: 10,
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: pagination.total,
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total) => `共 ${total} 条记录`,
+            onChange: (page, pageSize) => {
+              setPagination(prev => ({ ...prev, current: page, pageSize }));
+            },
           }}
         />
       </div>

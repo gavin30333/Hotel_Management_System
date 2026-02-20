@@ -10,14 +10,17 @@ declare module '*.svg' {
 }
 
 interface User {
-  id?: number;
+  _id?: string;
+  id?: string;
   username: string;
   password: string;
   role: 'merchant' | 'admin';
+  token?: string;
 }
 
 interface RoomType {
-  id?: number;
+  _id?: string;
+  id?: string;
   name: string;
   nameEn?: string;
   price: number;
@@ -50,7 +53,8 @@ interface ShoppingMall {
 }
 
 interface Discount {
-  id?: number;
+  _id?: string;
+  id?: string;
   name: string;
   type: 'percentage' | 'fixed' | 'special';
   value: number;
@@ -61,7 +65,8 @@ interface Discount {
 }
 
 interface Hotel {
-  id?: number;
+  _id: string;
+  id?: string;
   name: string;
   nameEn?: string;
   address: string;
@@ -72,6 +77,8 @@ interface Hotel {
   status: 'draft' | 'pending' | 'online' | 'offline';
   auditStatus?: 'passed' | 'rejected';
   auditReason?: string;
+  createdAt?: string;
+  updatedAt?: string;
   createTime?: string;
   updateTime?: string;
   roomTypes?: RoomType[];
@@ -88,4 +95,5 @@ interface Hotel {
     extraBed?: string;
     pets?: string;
   };
+  creator?: string | User;
 }

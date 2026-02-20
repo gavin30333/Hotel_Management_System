@@ -4,11 +4,22 @@
 
 ## 技术栈
 
+### 前端
+
 - **框架**: Umi 4
 - **UI 组件库**: Ant Design 5
 - **语言**: TypeScript
 - **日期处理**: Day.js
 - **代码规范**: ESLint + Prettier
+
+### 后端
+
+- **运行时**: Node.js
+- **框架**: Express
+- **数据库**: MongoDB
+- **OD**: Mongoose
+- **认证**: JWT
+- **语言**: TypeScript
 
 ## 功能模块
 
@@ -39,15 +50,6 @@
 | 酒店设施         | WiFi、游泳池、健身房等               |      |
 | 入住政策         | 入住/退房时间、取消政策等            |      |
 
-#### 功能特性
-
-- **酒店录入**: 点击侧边栏「酒店录入」或列表页「新增酒店」按钮，弹出编辑弹窗
-- **酒店编辑**: 点击「编辑」按钮，在弹窗中修改酒店信息
-- **酒店详情**: 抽屉式详情展示，包含完整酒店信息
-- **审核流程**: 管理员可审核待审核状态的酒店（通过/驳回）
-- **上下线管理**: 支持酒店上线和下线操作
-- **草稿保存**: 支持保存草稿，后续继续编辑
-
 ### 3. 权限隔离
 
 | 角色   | 权限                                   |
@@ -59,24 +61,48 @@
 
 ```
 Hotel_Management_System/
-├── src/
+├── src/                          # 前端源码
 │   ├── layouts/
-│   │   └── BasicLayout/        # 主布局组件
+│   │   └── BasicLayout/          # 主布局组件
 │   ├── pages/
-│   │   ├── Login/              # 登录页面
-│   │   ├── Register/           # 注册页面
-│   │   └── Hotel/              # 酒店管理
+│   │   ├── Login/                # 登录页面
+│   │   ├── Register/             # 注册页面
+│   │   └── Hotel/                # 酒店管理
 │   │       ├── components/
-│   │       │   └── HotelEditModal.tsx  # 酒店编辑弹窗
-│   │       └── List/           # 酒店列表页面
-│   ├── global.less             # 全局样式
-│   └── app.tsx                 # 应用入口
-├── typings.d.ts                # 类型定义
+│   │       │   └── HotelEditModal.tsx
+│   │       └── List/
+│   ├── utils/
+│   │   └── api.ts                # API请求封装
+│   └── global.less
+├── server/                       # 后端源码
+│   ├── src/
+│   │   ├── config/
+│   │   │   └── database.ts       # 数据库配置
+│   │   ├── controllers/
+│   │   │   ├── authController.ts # 认证控制器
+│   │   │   ├── hotelController.ts# 酒店控制器
+│   │   │   └── uploadController.ts
+│   │   ├── middlewares/
+│   │   │   ├── auth.ts           # JWT认证中间件
+│   │   │   └── error.ts          # 错误处理
+│   │   ├── models/
+│   │   │   ├── User.ts           # 用户模型
+│   │   │   └── Hotel.ts          # 酒店模型
+│   │   ├── routes/
+│   │   │   ├── authRoutes.ts
+│   │   │   ├── hotelRoutes.ts
+│   │   │   └── uploadRoutes.ts
+│   │   ├── utils/
+│   │   │   ├── response.ts
+│   │   │   └── upload.ts
+│   │   ├── server.ts             # 服务入口
+│   │   └── seed.ts               # 数据库初始化
+│   ├── uploads/                  # 上传文件目录
+│   ├── package.json
+│   └── tsconfig.json
+├── typings.d.ts
 ├── package.json
-├── tsconfig.json
-├── .umirc.ts                   # 路由配置
-├── .eslintrc.js
-└── .prettierrc
+└── README.md
 ```
 
 ## 快速开始
@@ -85,131 +111,225 @@ Hotel_Management_System/
 
 - Node.js >= 16.x
 - npm >= 8.x
+- MongoDB >= 5.0
+
+### 安装 MongoDB
+
+#### Windows
+
+1. 下载 MongoDB Community Server: https://www.mongodb.com/try/download/community
+2. 运行安装程序，选择完整安装
+3. 安装完成后，MongoDB 会自动作为 Windows 服务运行
+
+#### macOS
+
+```bash
+brew tap mongodb/brew
+brew install mongodb-community
+brew services start mongodb-community
+```
+
+#### Linux (Ubuntu)
+
+```bash
+wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | sudo apt-key add -
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+sudo apt update
+sudo apt install -y mongodb-org
+sudo systemctl start mongod
+```
 
 ### 安装依赖
 
 ```bash
+# 安装前端依赖
+npm install
+
+# 安装后端依赖
+cd server
 npm install
 ```
 
-### 启动开发服务
+### 启动服务
+
+#### 1. 启动 MongoDB（如果未作为服务运行）
+
+```bash
+mongod --dbpath /path/to/data/directory
+```
+
+#### 2. 初始化数据库（首次运行）
+
+```bash
+cd server
+npm run seed
+```
+
+这会创建：
+
+- 管理员账户: `admin` / `admin123`
+- 商户账户: `merchant` / `merchant123`
+- 示例酒店数据
+
+#### 3. 启动后端服务
+
+```bash
+cd server
+npm run dev
+```
+
+后端服务运行在 http://localhost:3001
+
+#### 4. 启动前端服务（新终端）
 
 ```bash
 npm start
 ```
 
-访问 http://localhost:8001
+前端服务运行在 http://localhost:8001
 
-### 构建生产版本
+### 测试账户
 
-```bash
-npm run build
-```
+| 角色   | 用户名   | 密码        |
+| ------ | -------- | ----------- |
+| 管理员 | admin    | admin123    |
+| 商户   | merchant | merchant123 |
 
-### 代码检查
+## API 接口文档
 
-```bash
-npm run lint
-```
+### 认证接口
 
-### 代码格式化
+| 方法 | 路径               | 说明         |
+| ---- | ------------------ | ------------ |
+| POST | /api/auth/register | 用户注册     |
+| POST | /api/auth/login    | 用户登录     |
+| GET  | /api/auth/profile  | 获取用户信息 |
+| PUT  | /api/auth/profile  | 更新用户名   |
+| PUT  | /api/auth/password | 修改密码     |
 
-```bash
-npm run format
-```
+### 酒店接口
+
+| 方法   | 路径                   | 说明             |
+| ------ | ---------------------- | ---------------- |
+| GET    | /api/hotels            | 获取酒店列表     |
+| GET    | /api/hotels/stats      | 获取酒店统计     |
+| GET    | /api/hotels/:id        | 获取酒店详情     |
+| POST   | /api/hotels            | 创建酒店         |
+| PUT    | /api/hotels/:id        | 更新酒店         |
+| DELETE | /api/hotels/:id        | 删除酒店         |
+| PUT    | /api/hotels/:id/submit | 提交审核         |
+| PUT    | /api/hotels/:id/audit  | 审核酒店(管理员) |
+| PUT    | /api/hotels/:id/toggle | 上线/下线        |
+
+### 上传接口
+
+| 方法 | 路径                 | 说明     |
+| ---- | -------------------- | -------- |
+| POST | /api/upload/single   | 单图上传 |
+| POST | /api/upload/multiple | 多图上传 |
 
 ## 数据模型
+
+### User 用户模型
+
+```typescript
+interface User {
+  _id: string;
+  username: string;
+  password: string; // 加密存储
+  role: 'merchant' | 'admin';
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
 
 ### Hotel 酒店模型
 
 ```typescript
 interface Hotel {
-  id?: number;
-  name: string; // 酒店中文名称
-  nameEn?: string; // 酒店英文名称
-  address: string; // 酒店地址
-  starRating: 1 | 2 | 3 | 4 | 5; // 酒店星级
-  phone: string; // 联系电话
-  description: string; // 酒店描述
-  images: string[]; // 酒店图片
-  status: 'draft' | 'pending' | 'online' | 'offline'; // 状态
-  auditStatus?: 'passed' | 'rejected'; // 审核状态
-  auditReason?: string; // 驳回原因
-  roomTypes?: RoomType[]; // 房型列表
-  openingDate?: string; // 开业时间
-  nearbyAttractions?: NearbyAttraction[]; // 附近景点
-  transportations?: Transportation[]; // 交通信息
-  shoppingMalls?: ShoppingMall[]; // 周边商场
-  discounts?: Discount[]; // 优惠活动
-  facilities?: string[]; // 酒店设施
-  policies?: {
-    // 入住政策
-    checkIn?: string;
-    checkOut?: string;
-    cancellation?: string;
-    extraBed?: string;
-    pets?: string;
-  };
-  createTime?: string;
-  updateTime?: string;
+  _id: string;
+  name: string;
+  nameEn?: string;
+  address: string;
+  starRating: 1 | 2 | 3 | 4 | 5;
+  phone: string;
+  description: string;
+  images: string[];
+  status: 'draft' | 'pending' | 'online' | 'offline';
+  auditStatus?: 'passed' | 'rejected';
+  auditReason?: string;
+  roomTypes: RoomType[];
+  openingDate?: string;
+  nearbyAttractions: NearbyAttraction[];
+  transportations: Transportation[];
+  shoppingMalls: ShoppingMall[];
+  discounts: Discount[];
+  facilities: string[];
+  policies: Policies;
+  creator: string; // 用户ID
+  createdAt: Date;
+  updatedAt: Date;
 }
 ```
 
-## 页面说明
+## 为什么选择 MongoDB？
 
-### 登录页面
+酒店数据具有以下特点，非常适合 MongoDB：
 
-支持商户/管理员角色选择
+1. **嵌套数据结构**: 房型、景点、交通、优惠等数据天然嵌套
+2. **Schema灵活**: 字段可能随业务变化，无需频繁迁移
+3. **查询高效**: 单文档查询即可获取完整酒店信息
+4. **开发效率高**: 与前端JSON格式一致，无需ORM转换
 
-### 酒店列表页面
+## 生产部署
 
-- 支持状态筛选、星级筛选、关键词搜索
-- 表格展示酒店基本信息、价格区间、状态
-- 操作按钮根据权限和状态动态显示
-- 点击「酒店录入」菜单或「新增酒店」按钮弹出新增弹窗
+### 后端构建
 
-### 酒店编辑弹窗
-
-- 基本信息：名称、星级、地址、描述、图片等
-- 房型信息：支持动态添加多种房型
-- 周边信息：景点、交通、商场
-- 优惠活动：折扣、立减、特价
-- 入住政策：入住/退房时间等
-
-### 酒店详情抽屉
-
-- 多Tab展示完整酒店信息
-- 图片预览
-- 房型价格展示
-
-## 开发说明
-
-### 路由配置
-
-路由配置在 `.umirc.ts` 文件中：
-
-```typescript
-routes: [
-  { path: '/login', component: './Login' },
-  { path: '/register', component: './Register' },
-  {
-    path: '/',
-    component: '@/layouts/BasicLayout',
-    routes: [
-      { path: '/', redirect: '/hotel/list' },
-      { path: '/hotel/list', component: './Hotel/List' },
-    ],
-  },
-];
+```bash
+cd server
+npm run build
+npm start
 ```
 
-### 主题色
+### 前端构建
 
-项目使用 Ant Design 默认主题色 `#1677ff`
+```bash
+npm run build
+```
 
-### Mock 数据
+构建产物在 `dist` 目录，可部署到任意静态服务器。
 
-当前使用 Mock 数据模拟后端接口，实际项目中需替换为真实 API 调用。
+### 环境变量配置
+
+生产环境需要修改 `server/.env`:
+
+```env
+PORT=3001
+MONGODB_URI=mongodb://your-mongodb-host:27017/hotel_management
+JWT_SECRET=your-production-secret-key
+JWT_EXPIRES_IN=7d
+```
+
+### 注意事项
+
+1. 生产环境务必修改 JWT_SECRET
+2. 建议使用 HTTPS
+3. MongoDB 建议配置认证
+4. 建议使用 PM2 管理 Node 进程
+
+## 常见问题
+
+### Q: MongoDB 连接失败？
+
+A: 检查 MongoDB 服务是否启动，端口是否正确（默认 27017）
+
+### Q: 登录后提示未授权？
+
+A: 检查 JWT_SECRET 配置是否一致，清除 localStorage 重新登录
+
+### Q: 图片上传失败？
+
+A: 检查 server/uploads 目录是否存在，是否有写入权限
 
 ## License
 

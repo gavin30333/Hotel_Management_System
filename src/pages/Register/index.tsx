@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Form, Input, Button, Card, Select, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import {Link, useNavigate} from 'react-router-dom'
+import { authApi } from '../../utils/api';
 import styles from './index.less';
 
 const { Option } = Select;
@@ -14,19 +15,22 @@ const RegisterPage: React.FC = () => {
   const onFinish = async (values: any) => {
     setLoading(true);
     try {
-      await new Promise((resolve) => { setTimeout(resolve, 1000); });
+      const response = await authApi.register(values.username, values.password, values.role);
       
-      const userData = {
-        username: values.username,
-        role: values.role,
-      };
-      
-      localStorage.setItem('currentUser', JSON.stringify(userData));
-      
-      message.success('注册成功');
-      navigate('/hotel/list');
-    } catch (error) {
-      message.error('注册失败，请重试');
+      if (response.success && response.data) {
+        const userData = {
+          id: response.data.user.id,
+          username: response.data.user.username,
+          role: response.data.user.role,
+          token: response.data.token,
+        };
+        
+        localStorage.setItem('currentUser', JSON.stringify(userData));
+        message.success('注册成功');
+        navigate('/hotel/list');
+      }
+    } catch (error: any) {
+      message.error(error.message || '注册失败，请重试');
     } finally {
       setLoading(false);
     }

@@ -10,6 +10,7 @@ import {
   LockOutlined,
   BellOutlined
 } from '@ant-design/icons';
+import { authApi } from '../../utils/api';
 import styles from './index.less';
 
 const { Header, Content, Sider } = Layout;
@@ -53,24 +54,28 @@ const BasicLayout: React.FC = () => {
 
   const handleProfileSubmit = async (values: any) => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      const updatedUser = { ...userData, username: values.username };
-      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-      message.success('个人信息更新成功');
-      setProfileModalVisible(false);
-      window.location.reload();
-    } catch (error) {
-      message.error('更新失败');
+      const response = await authApi.updateProfile(values.username);
+      if (response.success) {
+        const updatedUser = { ...userData, username: values.username };
+        localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+        message.success('个人信息更新成功');
+        setProfileModalVisible(false);
+        window.location.reload();
+      }
+    } catch (error: any) {
+      message.error(error.message || '更新失败');
     }
   };
 
   const handlePasswordSubmit = async (values: any) => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      message.success('密码修改成功');
-      passwordForm.resetFields();
-    } catch (error) {
-      message.error('修改失败');
+      const response = await authApi.changePassword(values.oldPassword, values.newPassword);
+      if (response.success) {
+        message.success('密码修改成功');
+        passwordForm.resetFields();
+      }
+    } catch (error: any) {
+      message.error(error.message || '修改失败');
     }
   };
 

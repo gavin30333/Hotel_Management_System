@@ -27,6 +27,7 @@ import {
 } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd';
 import dayjs from 'dayjs';
+import { uploadApi } from '../../../utils/api';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -50,6 +51,7 @@ const HotelEditModal: React.FC<HotelEditModalProps> = ({
   const [form] = Form.useForm();
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [activeTab, setActiveTab] = useState('basic');
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (visible && hotel) {
@@ -76,8 +78,31 @@ const HotelEditModal: React.FC<HotelEditModalProps> = ({
     }
   }, [visible, hotel, form]);
 
-  const handleUploadChange: UploadProps['onChange'] = ({ fileList: newFileList }) => {
-    setFileList(newFileList);
+  const handleUploadChange: UploadProps['onChange'] = async ({ fileList: newFileList }) => {
+    const updatedList: UploadFile[] = [];
+    
+    for (const file of newFileList) {
+      if (file.status === 'uploading') {
+        updatedList.push(file);
+      } else if (file.originFileObj && !file.url) {
+        try {
+          setUploading(true);
+          const result = await uploadApi.uploadSingle(file.originFileObj);
+          updatedList.push({
+            ...file,
+            status: 'done',
+            url: `http://localhost:3001${result.url}`,
+          } as UploadFile);
+        } catch (error) {
+          // 上传失败，不添加到列表
+        }
+      } else if (file.status === 'done') {
+        updatedList.push(file);
+      }
+    }
+    
+    setUploading(false);
+    setFileList(updatedList);
   };
 
   const uploadProps: UploadProps = {
@@ -96,7 +121,7 @@ const HotelEditModal: React.FC<HotelEditModalProps> = ({
         openingDate: values.openingDate?.format('YYYY-MM-DD'),
         images: fileList
           .filter(file => file.status === 'done')
-          .map(file => file.url || file.name || ''),
+          .map(file => file.url || ''),
       };
       onOk(hotelData);
     } catch (error) {
@@ -114,11 +139,11 @@ const HotelEditModal: React.FC<HotelEditModalProps> = ({
 
   return (
     <Modal
-      title={hotel?.id ? '编辑酒店信息' : '新增酒店'}
+      title={hotel?._id ? '编辑酒店信息' : '新增酒店'}
       open={visible}
       onCancel={onCancel}
       onOk={handleSubmit}
-      confirmLoading={loading}
+      confirmLoading={loading || uploading}
       width={900}
       destroyOnClose
       okText="保存"
@@ -590,7 +615,7 @@ const HotelEditModal: React.FC<HotelEditModalProps> = ({
                             name={[name, 'startDate']}
                             label="开始日期"
                           >
-                            <DatePicker style={{ width: '100%' }} placeholder="开始日期" />
+                            <Input placeholder="如：2024-01-01" />
                           </Form.Item>
                         </Col>
                         <Col span={8}>
@@ -599,7 +624,7 @@ const HotelEditModal: React.FC<HotelEditModalProps> = ({
                             name={[name, 'endDate']}
                             label="结束日期"
                           >
-                            <DatePicker style={{ width: '100%' }} placeholder="结束日期" />
+                            <Input placeholder="如：2024-12-31" />
                           </Form.Item>
                         </Col>
                         <Col span={8}>
