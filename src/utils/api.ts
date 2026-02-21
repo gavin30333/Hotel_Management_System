@@ -4,6 +4,7 @@ interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   body?: any;
   headers?: Record<string, string>;
+  skipAuthRedirect?: boolean;
 }
 
 interface ApiResponse<T = any> {
@@ -17,9 +18,12 @@ interface ApiResponse<T = any> {
 
 class ApiError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  code?: string;
+  
+  constructor(message: string, status: number, code?: string) {
     super(message);
     this.status = status;
+    this.code = code;
     this.name = 'ApiError';
   }
 }
@@ -27,17 +31,49 @@ class ApiError extends Error {
 const getToken = (): string | null => {
   const user = localStorage.getItem('currentUser');
   if (user) {
-    const userData = JSON.parse(user);
-    return userData.token;
+    try {
+      const userData = JSON.parse(user);
+      return userData.token;
+    } catch {
+      return null;
+    }
   }
   return null;
+};
+
+const clearAuth = (): void => {
+  localStorage.removeItem('currentUser');
+};
+
+const redirectToLogin = (): void => {
+  if (typeof window !== 'undefined') {
+    const currentPath = window.location.pathname;
+    if (currentPath !== '/login' && currentPath !== '/register') {
+      window.location.href = '/login';
+    }
+  }
+};
+
+const getErrorMessage = (status: number, message?: string): string => {
+  const errorMessages: Record<number, string> = {
+    400: '请求参数错误',
+    401: '登录已过期，请重新登录',
+    403: '没有权限执行此操作',
+    404: '请求的资源不存在',
+    500: '服务器内部错误',
+    502: '网关错误',
+    503: '服务暂时不可用',
+    504: '网关超时',
+  };
+  
+  return message || errorMessages[status] || `请求失败 (${status})`;
 };
 
 const request = async <T = any>(
   endpoint: string,
   options: RequestOptions = {}
 ): Promise<ApiResponse<T>> => {
-  const { method = 'GET', body, headers = {} } = options;
+  const { method = 'GET', body, headers = {}, skipAuthRedirect = false } = options;
 
   const token = getToken();
   if (token) {
@@ -54,22 +90,50 @@ const request = async <T = any>(
     config.body = JSON.stringify(body);
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-  const data = await response.json();
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+    const data = await response.json();
 
-  if (!response.ok) {
-    throw new ApiError(data.message || '请求失败', response.status);
+    if (!response.ok) {
+      const error = new ApiError(
+        getErrorMessage(response.status, data.message),
+        response.status,
+        data.code
+      );
+
+      // 401 未授权，清除登录状态并跳转
+      if (response.status === 401 && !skipAuthRedirect) {
+        clearAuth();
+        redirectToLogin();
+      }
+
+      throw error;
+    }
+
+    return data;
+  } catch (error: any) {
+    // 网络错误
+    if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+      throw new ApiError('网络连接失败，请检查网络', 0, 'NETWORK_ERROR');
+    }
+    throw error;
   }
-
-  return data;
 };
 
 export const authApi = {
-  login: (username: string, password: string, role: string) =>
-    request('/auth/login', { method: 'POST', body: { username, password, role } }),
+  login: (username: string, password: string) =>
+    request('/auth/login', { 
+      method: 'POST', 
+      body: { username, password },
+      skipAuthRedirect: true,
+    }),
 
-  register: (username: string, password: string, role: string) =>
-    request('/auth/register', { method: 'POST', body: { username, password, role } }),
+  register: (username: string, password: string, role?: string) =>
+    request('/auth/register', { 
+      method: 'POST', 
+      body: { username, password, role },
+      skipAuthRedirect: true,
+    }),
 
   getProfile: () => request('/auth/profile'),
 
@@ -78,6 +142,11 @@ export const authApi = {
 
   changePassword: (oldPassword: string, newPassword: string) =>
     request('/auth/password', { method: 'PUT', body: { oldPassword, newPassword } }),
+
+  logout: () => {
+    clearAuth();
+    redirectToLogin();
+  },
 };
 
 export const hotelApi = {
@@ -136,6 +205,10 @@ export const uploadApi = {
 
     const data = await response.json();
     if (!response.ok) {
+      if (response.status === 401) {
+        clearAuth();
+        redirectToLogin();
+      }
       throw new ApiError(data.message || '上传失败', response.status);
     }
 
@@ -157,6 +230,10 @@ export const uploadApi = {
 
     const data = await response.json();
     if (!response.ok) {
+      if (response.status === 401) {
+        clearAuth();
+        redirectToLogin();
+      }
       throw new ApiError(data.message || '上传失败', response.status);
     }
 
@@ -164,5 +241,22 @@ export const uploadApi = {
   },
 };
 
+// 工具函数
+export const isAuthenticated = (): boolean => {
+  return !!getToken();
+};
+
+export const getCurrentUser = (): any => {
+  const user = localStorage.getItem('currentUser');
+  if (user) {
+    try {
+      return JSON.parse(user);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
+
 export { ApiError };
-export default { authApi, hotelApi, uploadApi };
+export default { authApi, hotelApi, uploadApi, isAuthenticated, getCurrentUser };

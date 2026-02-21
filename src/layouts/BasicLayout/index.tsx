@@ -21,6 +21,8 @@ const BasicLayout: React.FC = () => {
     token: { colorBgContainer, borderRadiusLG, colorPrimary },
   } = theme.useToken();
 
+  console.log('[BasicLayout] 渲染, path:', location.pathname);
+
   const user = localStorage.getItem('currentUser');
   const userData = user ? JSON.parse(user) : null;
   const navigate = useNavigate();

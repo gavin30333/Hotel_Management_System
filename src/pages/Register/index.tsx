@@ -1,21 +1,33 @@
 import React, { useState } from 'react';
-import { Form, Input, Button, Card, Select, message } from 'antd';
-import { UserOutlined, LockOutlined } from '@ant-design/icons';
-import {Link, useNavigate} from 'react-router-dom'
-import { authApi } from '../../utils/api';
+import { Form, Input, Button, Card, message, Alert } from 'antd';
+import { UserOutlined, LockOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { Link, useNavigate } from 'react-router-dom';
+import { authApi, ApiError } from '../../utils/api';
 import styles from './index.less';
-
-const { Option } = Select;
 
 const RegisterPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>('');
   const [form] = Form.useForm();
   const navigate = useNavigate();
-
+  const getErrorMessage = (error: ApiError): string => {
+    switch (error.status) {
+      case 400:
+        return error.message || '用户名已存在';
+      case 401:
+        return '认证失败';
+      case 500:
+        return '服务器错误，请稍后重试';
+      default:
+        return error.message || '注册失败，请重试';
+    }
+  };
   const onFinish = async (values: any) => {
     setLoading(true);
+    setError('');
+    
     try {
-      const response = await authApi.register(values.username, values.password, values.role);
+      const response = await authApi.register(values.username, values.password);
       
       if (response.success && response.data) {
         const userData = {
@@ -26,24 +38,43 @@ const RegisterPage: React.FC = () => {
         };
         
         localStorage.setItem('currentUser', JSON.stringify(userData));
-        message.success('注册成功');
+        message.success('注册成功，欢迎加入！');
         navigate('/hotel/list');
       }
-    } catch (error: any) {
-      message.error(error.message || '注册失败，请重试');
+    } catch (err: any) {
+      const errorMsg = getErrorMessage(err);
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
   };
 
+
+
   return (
-    <div className={styles.registerContainer}>
-      <Card className={styles.registerCard}>
+    <div className={styles.loginContainer}>
+      <Card className={styles.loginCard}>
         <div className={styles.header}>
           <h1>酒店后台管理系统</h1>
           <p>创建您的账户</p>
         </div>
-        
+
+        <div className={styles.formTip}>
+          <InfoCircleOutlined className={styles.icon} />
+          <span>注册成功后将自动登录</span>
+        </div>
+
+        {error && (
+          <Alert
+            className={styles.errorAlert}
+            message={error}
+            type="error"
+            showIcon
+            closable
+            onClose={() => setError('')}
+          />
+        )}
+
         <Form
           form={form}
           name="register"
@@ -52,11 +83,16 @@ const RegisterPage: React.FC = () => {
         >
           <Form.Item
             name="username"
-            rules={[{ required: true, message: '请输入用户名' }]}
+            rules={[
+              { required: true, message: '请输入用户名' },
+              { min: 2, max: 20, message: '用户名长度为2-20个字符' },
+            ]}
           >
             <Input 
-              prefix={<UserOutlined />} 
-              placeholder="请输入用户名" 
+              prefix={<UserOutlined style={{ color: '#999' }} />} 
+              placeholder="请输入用户名"
+              className={styles.inputField}
+              autoComplete="username"
             />
           </Form.Item>
 
@@ -68,8 +104,10 @@ const RegisterPage: React.FC = () => {
             ]}
           >
             <Input.Password
-              prefix={<LockOutlined />}
+              prefix={<LockOutlined style={{ color: '#999' }} />}
               placeholder="请输入密码"
+              className={styles.inputField}
+              autoComplete="new-password"
             />
           </Form.Item>
 
@@ -89,20 +127,11 @@ const RegisterPage: React.FC = () => {
             ]}
           >
             <Input.Password
-              prefix={<LockOutlined />}
+              prefix={<LockOutlined style={{ color: '#999' }} />}
               placeholder="请确认密码"
+              className={styles.inputField}
+              autoComplete="new-password"
             />
-          </Form.Item>
-
-          <Form.Item
-            name="role"
-            rules={[{ required: true, message: '请选择角色' }]}
-            initialValue="merchant"
-          >
-            <Select placeholder="请选择角色">
-              <Option value="merchant">商户</Option>
-              <Option value="admin">管理员</Option>
-            </Select>
           </Form.Item>
 
           <Form.Item>
@@ -111,9 +140,9 @@ const RegisterPage: React.FC = () => {
               htmlType="submit" 
               loading={loading} 
               block
-              size="large"
+              className={styles.loginButton}
             >
-              注册
+              {loading ? '注册中...' : '注册'}
             </Button>
           </Form.Item>
 

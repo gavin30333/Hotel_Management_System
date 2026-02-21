@@ -42,7 +42,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { username, password, role } = req.body;
+    const { username, password } = req.body;
 
     if (!username || !password) {
       sendError(res, 400, '请输入用户名和密码');
@@ -58,11 +58,6 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       sendError(res, 401, '用户名或密码错误');
-      return;
-    }
-
-    if (role && user.role !== role) {
-      sendError(res, 401, '角色不匹配，请选择正确的角色登录');
       return;
     }
 

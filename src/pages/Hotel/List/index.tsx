@@ -64,7 +64,10 @@ const HotelListPage: React.FC = () => {
   const userData = user ? JSON.parse(user) : { role: 'merchant' };
   const isAdmin = userData.role === 'admin';
 
+  console.log('[HotelListPage] 组件渲染, userData:', userData);
+
   const fetchHotels = async () => {
+    console.log('[HotelListPage] 开始获取酒店列表...');
     setLoading(true);
     try {
       const response = await hotelApi.getList({
@@ -74,6 +77,8 @@ const HotelListPage: React.FC = () => {
         starRating: starFilter,
         keyword: searchText,
       });
+
+      console.log('[HotelListPage] API响应:', response);
 
       if (response.success && response.data) {
         setHotels(response.data);

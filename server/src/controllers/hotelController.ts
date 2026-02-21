@@ -1,5 +1,5 @@
-import { Request, Response } from 'express';
-import { Hotel, IHotel } from '../models/Hotel';
+import {  Response } from 'express';
+import { Hotel } from '../models/Hotel';
 import { AuthRequest } from '../middlewares/auth';
 import { sendSuccess, sendError, sendPaginated } from '../utils/response';
 
