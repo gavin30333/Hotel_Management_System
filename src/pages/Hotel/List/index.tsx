@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Table, 
   Card, 
@@ -30,14 +30,15 @@ import {
   StarFilled,
   PercentageOutlined,
   CarOutlined,
-  ShopOutlined
+  ShopOutlined,
+  DeleteOutlined
 } from '@ant-design/icons';
 import { useSearchParams } from 'react-router-dom';
 import HotelEditModal from '../components/HotelEditModal';
+import SearchSection from './SearchSection';
 import { hotelApi } from '../../../utils/api';
 import styles from './index.less';
 
-const { Search } = Input;
 const { Option } = Select;
 const { TabPane } = Tabs;
 const { Text, Title } = Typography;
@@ -48,7 +49,7 @@ const HotelListPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [starFilter, setStarFilter] = useState<string>('all');
-  const [searchText, setSearchText] = useState<string>('');
+  const [keyword, setKeyword] = useState<string>('');
   const [auditModalVisible, setAuditModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [detailDrawerVisible, setDetailDrawerVisible] = useState(false);
@@ -64,10 +65,7 @@ const HotelListPage: React.FC = () => {
   const userData = user ? JSON.parse(user) : { role: 'merchant' };
   const isAdmin = userData.role === 'admin';
 
-  console.log('[HotelListPage] 组件渲染, userData:', userData);
-
-  const fetchHotels = async () => {
-    console.log('[HotelListPage] 开始获取酒店列表...');
+  const fetchHotels = useCallback(async () => {
     setLoading(true);
     try {
       const response = await hotelApi.getList({
@@ -75,10 +73,8 @@ const HotelListPage: React.FC = () => {
         pageSize: pagination.pageSize,
         status: statusFilter,
         starRating: starFilter,
-        keyword: searchText,
+        keyword: keyword,
       });
-
-      console.log('[HotelListPage] API响应:', response);
 
       if (response.success && response.data) {
         setHotels(response.data);
@@ -92,7 +88,7 @@ const HotelListPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [pagination.current, pagination.pageSize, statusFilter, starFilter, keyword]);
 
   useEffect(() => {
     const action = searchParams.get('action');
@@ -103,9 +99,10 @@ const HotelListPage: React.FC = () => {
     }
   }, [searchParams, setSearchParams]);
 
+  // useEffect 依赖 fetchHotels
   useEffect(() => {
     fetchHotels();
-  }, [pagination.current, pagination.pageSize, statusFilter, starFilter]);
+  }, [fetchHotels]);
 
   const getStatusTag = (status: string, auditStatus?: string) => {
     const statusMap: Record<string, { color: string; text: string }> = {
@@ -195,6 +192,21 @@ const HotelListPage: React.FC = () => {
       }
     } catch (error: any) {
       message.error(error.message || '下线失败，请重试');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setLoading(true);
+    try {
+      const response = await hotelApi.delete(id);
+      if (response.success) {
+        message.success('酒店删除成功');
+        fetchHotels();
+      }
+    } catch (error: any) {
+      message.error(error.message || '删除失败，请重试');
     } finally {
       setLoading(false);
     }
@@ -422,6 +434,23 @@ const HotelListPage: React.FC = () => {
               重新上线
             </Button>
           )}
+
+          <Popconfirm
+            title="确定要删除该酒店吗？"
+            onConfirm={() => handleDelete(record._id)}
+            okText="确定"
+            cancelText="取消"
+            okButtonProps={{ danger: true }}
+          >
+            <Button 
+              type="link" 
+              size="small" 
+              icon={<DeleteOutlined />}
+              danger
+            >
+              删除
+            </Button>
+          </Popconfirm>
         </Space>
       ),
     },
@@ -717,15 +746,13 @@ const HotelListPage: React.FC = () => {
       </div>
 
       <div className={styles.filters}>
-        <Search
-          placeholder="搜索酒店名称、英文名或地址"
-          allowClear
-          style={{ width: 320 }}
+        <SearchSection 
           onSearch={(value) => {
-            setSearchText(value);
-            setPagination(prev => ({ ...prev, current: 1 }));
+            if (value !== keyword) {
+              setKeyword(value);
+              setPagination(prev => ({ ...prev, current: 1 }));
+            }
           }}
-          onChange={(e) => setSearchText(e.target.value)}
         />
         <Select
           defaultValue="all"
