@@ -110,7 +110,7 @@ const HotelListPage: React.FC = () => {
   const getStatusTag = (status: string, auditStatus?: string) => {
     const statusMap: Record<string, { color: string; text: string }> = {
       draft: { color: 'default', text: '草稿' },
-      pending: { color: 'orange', text: '审核中' },
+      pending: { color: 'orange', text: '待审核' },
       online: { color: 'green', text: '已上线' },
       offline: { color: 'red', text: '已下线' },
     };
@@ -124,11 +124,16 @@ const HotelListPage: React.FC = () => {
       return <Tag color={statusMap[status].color}>{statusMap[status].text}</Tag>;
     }
     
-    if (auditStatus) {
+    if (auditStatus && auditMap[auditStatus]) {
       return <Tag color={auditMap[auditStatus].color}>{auditMap[auditStatus].text}</Tag>;
     }
     
-    return <Tag color={statusMap[status].color}>{statusMap[status].text}</Tag>;
+    const statusConfig = statusMap[status];
+    if (statusConfig) {
+      return <Tag color={statusConfig.color}>{statusConfig.text}</Tag>;
+    }
+
+    return <Tag>未知</Tag>;
   };
 
   const getStarDisplay = (starRating: number) => (
