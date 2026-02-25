@@ -101,9 +101,38 @@ export const updateHotel = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
+    // 状态检查：商户不能修改审核中和已上线的酒店
+    if (req.user?.role !== 'admin') {
+      if (hotel.status === 'pending') {
+        sendError(res, 400, '审核中的酒店无法修改');
+        return;
+      }
+      
+      if (hotel.status === 'online') {
+        sendError(res, 400, '已上线的酒店无法直接修改，请先下线');
+        return;
+      }
+    }
+
+    const updateData = { ...req.body, updatedAt: new Date() };
+    
+    // 防止直接通过接口修改关键状态字段
+    delete updateData.status;
+    delete updateData.auditStatus;
+    delete updateData.auditReason;
+    delete updateData.creator;
+
+    // 如果是驳回状态，修改后重置为草稿
+    // 如果是已下线状态：商户修改重置为草稿，管理员修改保持原状态
+    if (hotel.status === 'rejected' || (hotel.status === 'offline' && req.user?.role !== 'admin')) {
+      updateData.status = 'draft';
+      updateData.auditStatus = null;
+      updateData.auditReason = null;
+    }
+
     const updatedHotel = await Hotel.findByIdAndUpdate(
       req.params.id,
-      { ...req.body, updatedAt: new Date() },
+      updateData,
       { new: true, runValidators: true }
     );
 
@@ -150,8 +179,8 @@ export const submitForAudit = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
-    if (hotel.status !== 'draft' && hotel.status !== 'offline') {
-      sendError(res, 400, '只有草稿或已下线的酒店可以提交审核');
+    if (hotel.status !== 'draft' && hotel.status !== 'offline' && hotel.status !== 'rejected') {
+      sendError(res, 400, '只有草稿、已下线或驳回的酒店可以提交审核');
       return;
     }
 
@@ -186,7 +215,7 @@ export const auditHotel = async (req: AuthRequest, res: Response): Promise<void>
       hotel.auditStatus = 'passed';
       hotel.auditReason = undefined;
     } else {
-      hotel.status = 'offline';
+      hotel.status = 'rejected';
       hotel.auditStatus = 'rejected';
       hotel.auditReason = reason;
     }

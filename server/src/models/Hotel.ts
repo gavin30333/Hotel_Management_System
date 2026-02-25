@@ -56,7 +56,7 @@ export interface IHotel extends Document {
   phone: string;
   description: string;
   images: string[];
-  status: 'draft' | 'pending' | 'online' | 'offline';
+  status: 'draft' | 'pending' | 'online' | 'offline' | 'rejected';
   auditStatus?: 'passed' | 'rejected';
   auditReason?: string;
   roomTypes: IRoomType[];
@@ -178,7 +178,7 @@ const hotelSchema = new Schema<IHotel>(
     ],
     status: {
       type: String,
-      enum: ['draft', 'pending', 'online', 'offline'],
+      enum: ['draft', 'pending', 'online', 'offline', 'rejected'],
       default: 'draft',
     },
     auditStatus: {

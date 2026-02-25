@@ -105,25 +105,22 @@ const HotelListPage: React.FC = () => {
   }, [fetchHotels]);
 
   const getStatusTag = (status: string, auditStatus?: string) => {
+    // 优先判断 Pending 状态
+    if (status === 'pending') {
+      return <Tag color="orange">待审核</Tag>;
+    }
+    
+    // 判断 Rejected 状态 (Status 为 rejected 或 auditStatus 为 rejected)
+    if (status === 'rejected' || auditStatus === 'rejected') {
+      return <Tag color="red">审核驳回</Tag>;
+    }
+
     const statusMap: Record<string, { color: string; text: string }> = {
       draft: { color: 'default', text: '草稿' },
-      pending: { color: 'orange', text: '待审核' },
       online: { color: 'green', text: '已上线' },
       offline: { color: 'red', text: '已下线' },
+      rejected: { color: 'red', text: '审核驳回' },
     };
-    
-    const auditMap: Record<string, { color: string; text: string }> = {
-      passed: { color: 'green', text: '通过' },
-      rejected: { color: 'red', text: '驳回' },
-    };
-    
-    if (status === 'online' || status === 'offline') {
-      return <Tag color={statusMap[status].color}>{statusMap[status].text}</Tag>;
-    }
-    
-    if (auditStatus && auditMap[auditStatus]) {
-      return <Tag color={auditMap[auditStatus].color}>{auditMap[auditStatus].text}</Tag>;
-    }
     
     const statusConfig = statusMap[status];
     if (statusConfig) {
@@ -182,16 +179,17 @@ const HotelListPage: React.FC = () => {
     }
   };
 
-  const handleOffline = async (hotel: Hotel) => {
+  const handleToggleOnline = async (hotel: Hotel) => {
     setLoading(true);
     try {
       const response = await hotelApi.toggleOnline(hotel._id);
       if (response.success) {
-        message.success('酒店已下线');
+        const isOnline = hotel.status === 'online';
+        message.success(isOnline ? '酒店已下线' : '酒店已重新上线');
         fetchHotels();
       }
     } catch (error: any) {
-      message.error(error.message || '下线失败，请重试');
+      message.error(error.message || '操作失败，请重试');
     } finally {
       setLoading(false);
     }
@@ -348,111 +346,148 @@ const HotelListPage: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 200,
+      width: 280,
       fixed: 'right' as const,
-      render: (_: any, record: Hotel) => (
-        <Space size="small">
-          <Button 
-            type="link" 
-            size="small" 
-            icon={<EyeOutlined />}
-            onClick={() => handleViewDetail(record)}
-          >
-            详情
-          </Button>
-          
-          {(record.status === 'draft' || record.status === 'offline' || record.auditStatus === 'rejected') && (
-            <Button 
-              type="link" 
-              size="small" 
-              icon={<EditOutlined />}
-              onClick={() => handleEdit(record)}
-            >
-              编辑
-            </Button>
-          )}
-          
-          {isAdmin && record.status === 'pending' && (
-            <>
-              <Button 
-                type="link" 
-                size="small" 
-                icon={<CheckCircleOutlined />}
-                style={{ color: '#52c41a' }}
-                onClick={() => handleAudit(record, 'pass')}
-              >
-                通过
-              </Button>
-              <Button 
-                type="link" 
-                size="small" 
-                icon={<CloseCircleOutlined />}
-                style={{ color: '#f5222d' }}
-                onClick={() => handleAudit(record, 'reject')}
-              >
-                驳回
-              </Button>
-            </>
-          )}
-          
-          {!isAdmin && record.status === 'draft' && (
-            <Button 
-              type="link" 
-              size="small" 
-              icon={<UploadOutlined />}
-              onClick={() => handlePublish(record)}
-            >
-              提交审核
-            </Button>
-          )}
-          
-          {record.status === 'online' && (
-            <Popconfirm
-              title="确定要下线该酒店吗？"
-              onConfirm={() => handleOffline(record)}
-              okText="确定"
-              cancelText="取消"
-            >
-              <Button 
-                type="link" 
-                size="small" 
-                icon={<StopOutlined />}
-                style={{ color: '#f5222d' }}
-              >
-                下线
-              </Button>
-            </Popconfirm>
-          )}
-          
-          {record.status === 'offline' && record.auditStatus === 'passed' && (
-            <Button 
-              type="link" 
-              size="small" 
-              icon={<UploadOutlined />}
-              onClick={() => handlePublish(record)}
-            >
-              重新上线
-            </Button>
-          )}
+      render: (_: any, record: Hotel) => {
+        // 状态判定逻辑
+        const isPending = record.status === 'pending';
+        const isOnline = record.status === 'online';
+        const isOffline = record.status === 'offline';
+        const isRejected = record.status === 'rejected' || (!isPending && record.auditStatus === 'rejected');
+        const isDraft = record.status === 'draft' && !isRejected;
 
-          <Popconfirm
-            title="确定要删除该酒店吗？"
-            onConfirm={() => handleDelete(record._id)}
-            okText="确定"
-            cancelText="取消"
-            okButtonProps={{ danger: true }}
-          >
+        // 权限判定逻辑
+        // 编辑权限: 
+        // Admin: 全状态可编辑 (Draft, Pending, Online, Offline, Rejected)
+        // Merchant: 仅 Draft, Offline, Rejected 可编辑
+        const canEdit = isAdmin || (isDraft || isOffline || isRejected);
+
+        // 删除权限:
+        // Admin: 全状态可删除 (需二次确认)
+        // Merchant: 仅 Draft, Offline, Rejected 可删除
+        const canDelete = isAdmin || (isDraft || isOffline || isRejected);
+
+        // 提交审核权限: Draft, Rejected, 或 Offline (且需要重新审核)
+        // Admin & Merchant 均可
+        const canSubmit = isDraft || isRejected || (isOffline && record.auditStatus !== 'passed');
+
+        // 重新上线权限 (直接恢复): Offline 且 Audit Passed
+        const canReonline = isOffline && record.auditStatus === 'passed';
+
+        // 审核权限: 仅 Admin 且在 Pending 状态
+        const canAudit = isAdmin && isPending;
+
+        // 下线权限: 仅 Online 状态
+        const canOffline = isOnline;
+
+        return (
+          <Space size="small">
             <Button 
               type="link" 
               size="small" 
-              icon={<DeleteOutlined />}
-              danger
+              icon={<EyeOutlined />}
+              onClick={() => handleViewDetail(record)}
             >
-              删除
+              详情
             </Button>
-          </Popconfirm>
-        </Space>
-      ),
+            
+            {canEdit && (
+              <Button 
+                type="link" 
+                size="small" 
+                icon={<EditOutlined />}
+                onClick={() => handleEdit(record)}
+              >
+                编辑
+              </Button>
+            )}
+            
+            {canAudit && (
+              <>
+                <Button 
+                  type="link" 
+                  size="small" 
+                  icon={<CheckCircleOutlined />}
+                  style={{ color: '#52c41a' }}
+                  onClick={() => handleAudit(record, 'pass')}
+                >
+                  通过
+                </Button>
+                <Button 
+                  type="link" 
+                  size="small" 
+                  icon={<CloseCircleOutlined />}
+                  style={{ color: '#f5222d' }}
+                  onClick={() => handleAudit(record, 'reject')}
+                >
+                  驳回
+                </Button>
+              </>
+            )}
+            
+            {canSubmit && (
+              <Button 
+                type="link" 
+                size="small" 
+                icon={<UploadOutlined />}
+                onClick={() => handlePublish(record)}
+              >
+                提交审核
+              </Button>
+            )}
+
+            {canReonline && (
+              <Button 
+                type="link" 
+                size="small" 
+                icon={<UploadOutlined />}
+                onClick={() => handleToggleOnline(record)}
+              >
+                重新上线
+              </Button>
+            )}
+            
+            {canOffline && (
+              <Popconfirm
+                title="确定要下线该酒店吗？"
+                description="下线后C端不可见，但数据保留"
+                onConfirm={() => handleToggleOnline(record)}
+                okText="确定"
+                cancelText="取消"
+              >
+                <Button 
+                  type="link" 
+                  size="small" 
+                  icon={<StopOutlined />}
+                  style={{ color: '#f5222d' }}
+                >
+                  下线
+                </Button>
+              </Popconfirm>
+            )}
+
+            {canDelete && (
+              <Popconfirm
+                title="确定要删除该酒店吗？"
+                description="此操作不可恢复，请谨慎操作"
+                onConfirm={() => handleDelete(record._id)}
+                okText="确定"
+                cancelText="取消"
+                okButtonProps={{ danger: true }}
+              >
+                <Button 
+                  type="link" 
+                  size="small" 
+                  icon={<DeleteOutlined />}
+                  danger
+                >
+                  删除
+                </Button>
+              </Popconfirm>
+            )}
+          </Space>
+        );
+      },
     },
   ];
 
