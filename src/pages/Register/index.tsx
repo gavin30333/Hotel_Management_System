@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Form, Input, Button, Card, message, Alert } from 'antd';
-import { UserOutlined, LockOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Card, message, Alert, Radio } from 'antd';
+import { UserOutlined, LockOutlined, InfoCircleOutlined, SolutionOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { authApi, ApiError } from '../../utils/api';
 import styles from './index.less';
@@ -27,7 +27,7 @@ const RegisterPage: React.FC = () => {
     setError('');
     
     try {
-      const response = await authApi.register(values.username, values.password);
+      const response = await authApi.register(values.username, values.password, values.role);
       
       if (response.success && response.data) {
         const userData = {
@@ -132,6 +132,21 @@ const RegisterPage: React.FC = () => {
               className={styles.inputField}
               autoComplete="new-password"
             />
+          </Form.Item>
+
+          <Form.Item
+            name="role"
+            initialValue="merchant"
+            rules={[{ required: true, message: '请选择注册角色' }]}
+          >
+            <Radio.Group className={styles.roleGroup}>
+              <Radio.Button value="merchant">
+                <SolutionOutlined /> 酒店商户
+              </Radio.Button>
+              <Radio.Button value="admin">
+                <UserOutlined /> 系统管理员
+              </Radio.Button>
+            </Radio.Group>
           </Form.Item>
 
           <Form.Item>

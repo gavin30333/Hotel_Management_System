@@ -170,3 +170,43 @@
     box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
   }
 }
+
+.roleGroup {
+  width: 100%;
+  display: flex;
+  
+  :global {
+    .ant-radio-button-wrapper {
+      flex: 1;
+      text-align: center;
+      height: 40px;
+      line-height: 38px;
+      
+      &:first-child {
+        border-radius: 8px 0 0 8px;
+      }
+      
+      &:last-child {
+        border-radius: 0 8px 8px 0;
+      }
+
+      .anticon {
+        margin-right: 8px;
+      }
+      
+      &.ant-radio-button-wrapper-checked {
+        background: #667eea;
+        border-color: #667eea;
+        color: #fff;
+        
+        &:hover {
+          color: #fff;
+        }
+
+        &::before {
+          background-color: #667eea;
+        }
+      }
+    }
+  }
+}
