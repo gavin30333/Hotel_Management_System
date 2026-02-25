@@ -1,21 +1,15 @@
-# dependencies
 node_modules
-.pnp
-.pnp.js
-
-# testing
-coverage
-
-# production
 dist
-build
-
-# misc
-.DS_Store
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
 .umi
-.umi-production
-.umirc.local.ts
+.mfsu
+.venv
+tests/__pycache__
+tests/*.png
+tests/artifacts/*.png
+coverage
+.DS_Store
+.env
+
+# Local tests and specs
+.trae/specs
+tests/

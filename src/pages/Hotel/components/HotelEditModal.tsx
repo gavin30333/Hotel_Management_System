@@ -146,7 +146,7 @@ const HotelEditModal: React.FC<HotelEditModalProps> = ({
       confirmLoading={loading || uploading}
       width={900}
       destroyOnClose
-      okText="保存"
+      okText="保存信息"
       cancelText="取消"
       bodyStyle={{ padding: '12px 24px' }}
     >
