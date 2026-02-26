@@ -1,6 +1,9 @@
 import { defineConfig } from '@umijs/max';
 
 export default defineConfig({
+  define: {
+    'process.env.API_BASE_URL': process.env.API_BASE_URL || 'http://localhost:3001/api',
+  },
   routes: [
     {
       path: '/login',
