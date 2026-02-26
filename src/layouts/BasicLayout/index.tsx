@@ -8,7 +8,8 @@ import {
   EditOutlined,
   SettingOutlined,
   LockOutlined,
-  BellOutlined
+  BellOutlined,
+  TeamOutlined
 } from '@ant-design/icons';
 import { authApi } from '../../utils/api';
 import styles from './index.less';
@@ -27,6 +28,7 @@ const BasicLayout: React.FC = () => {
   const userData = user ? JSON.parse(user) : null;
   const navigate = useNavigate();
   const isAdmin = userData?.role === 'admin';
+  const isSuperAdmin = userData?.role === 'super_admin';
 
   const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
@@ -118,7 +120,7 @@ const BasicLayout: React.FC = () => {
   };
 
   const menuItems = useMemo(() => {
-    return [
+    const items = [
       {
         key: '/hotel/list',
         icon: <HomeOutlined />,
@@ -130,7 +132,17 @@ const BasicLayout: React.FC = () => {
         label: <Link to="/hotel/list?action=add">酒店录入</Link>,
       },
     ];
-  }, []);
+
+    if (isSuperAdmin) {
+      items.push({
+        key: '/admin/management',
+        icon: <TeamOutlined />,
+        label: <Link to="/admin/management">管理员管理</Link>,
+      });
+    }
+
+    return items;
+  }, [isSuperAdmin]);
 
   const getSelectedKeys = () => {
     const path = location.pathname;
@@ -169,8 +181,8 @@ const BasicLayout: React.FC = () => {
         />
         <div className={styles.siderFooter}>
           <div className={styles.roleInfo}>
-            <Tag color={isAdmin ? 'blue' : 'green'}>
-              {isAdmin ? '管理员' : '商户'}
+            <Tag color={isSuperAdmin ? 'gold' : (isAdmin ? 'blue' : 'green')}>
+              {isSuperAdmin ? '超级管理员' : (isAdmin ? '管理员' : '商户')}
             </Tag>
           </div>
         </div>
@@ -202,7 +214,7 @@ const BasicLayout: React.FC = () => {
                   <div className={styles.userDetails}>
                     <span className={styles.userName}>{userData.username}</span>
                     <span className={styles.userRole}>
-                      {isAdmin ? '管理员' : '商户'}
+                      {isSuperAdmin ? '超级管理员' : (isAdmin ? '管理员' : '商户')}
                     </span>
                   </div>
                 </div>
@@ -246,8 +258,8 @@ const BasicLayout: React.FC = () => {
             <Avatar size={64} icon={<UserOutlined />} style={{ backgroundColor: colorPrimary }} />
             <div>
               <div style={{ fontSize: 18, fontWeight: 600 }}>{userData?.username}</div>
-              <Tag color={isAdmin ? 'blue' : 'green'} style={{ marginTop: 4 }}>
-                {isAdmin ? '管理员' : '商户'}
+              <Tag color={isSuperAdmin ? 'gold' : (isAdmin ? 'blue' : 'green')} style={{ marginTop: 4 }}>
+                {isSuperAdmin ? '超级管理员' : (isAdmin ? '管理员' : '商户')}
               </Tag>
             </div>
           </div>

@@ -33,6 +33,7 @@ app.get('/api', (req, res) => {
       auth: '/api/auth',
       hotels: '/api/hotels',
       upload: '/api/upload',
+      admins: '/api/admins',
     },
   });
 });

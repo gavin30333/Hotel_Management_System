@@ -12,4 +12,6 @@ coverage
 
 # Local tests and specs
 .trae/specs
+.trae/documents
 tests/
+docs/plans/

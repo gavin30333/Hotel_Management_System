@@ -26,6 +26,10 @@ export default defineConfig({
               path: 'hotel/list',
               component: './Hotel/List',
             },
+            {
+              path: 'admin/management',
+              component: './Admin/Management',
+            },
           ],
         },
       ],

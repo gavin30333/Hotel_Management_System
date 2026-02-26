@@ -16,7 +16,7 @@ export const getHotels = async (req: AuthRequest, res: Response): Promise<void> 
     const query: any = {};
 
     // 权限隔离：商户只能看到自己创建的酒店
-    if (req.user?.role !== 'admin') {
+    if (!['admin', 'super_admin'].includes(req.user?.role || '')) {
       query.creator = req.user?._id;
     }
 
@@ -60,7 +60,7 @@ export const getHotelById = async (req: AuthRequest, res: Response): Promise<voi
     }
 
     // 权限检查：商户只能查看自己创建的酒店
-    if (req.user?.role !== 'admin' && hotel.creator._id.toString() !== req.user?._id?.toString()) {
+    if (!['admin', 'super_admin'].includes(req.user?.role || '') && hotel.creator._id.toString() !== req.user?._id?.toString()) {
       sendError(res, 403, '没有权限查看此酒店');
       return;
     }
@@ -96,13 +96,13 @@ export const updateHotel = async (req: AuthRequest, res: Response): Promise<void
     }
 
     // 权限检查：商户只能修改自己创建的酒店
-    if (req.user?.role !== 'admin' && hotel.creator.toString() !== req.user?._id?.toString()) {
+    if (!['admin', 'super_admin'].includes(req.user?.role || '') && hotel.creator.toString() !== req.user?._id?.toString()) {
       sendError(res, 403, '没有权限修改此酒店');
       return;
     }
 
     // 状态检查：商户不能修改审核中和已上线的酒店
-    if (req.user?.role !== 'admin') {
+    if (!['admin', 'super_admin'].includes(req.user?.role || '')) {
       if (hotel.status === 'pending') {
         sendError(res, 400, '审核中的酒店无法修改');
         return;
@@ -124,7 +124,7 @@ export const updateHotel = async (req: AuthRequest, res: Response): Promise<void
 
     // 如果是驳回状态，修改后重置为草稿
     // 如果是已下线状态：商户修改重置为草稿，管理员修改保持原状态
-    if (hotel.status === 'rejected' || (hotel.status === 'offline' && req.user?.role !== 'admin')) {
+    if (hotel.status === 'rejected' || (hotel.status === 'offline' && !['admin', 'super_admin'].includes(req.user?.role || ''))) {
       updateData.status = 'draft';
       updateData.auditStatus = null;
       updateData.auditReason = null;
@@ -152,7 +152,7 @@ export const deleteHotel = async (req: AuthRequest, res: Response): Promise<void
     }
 
     // 权限检查：商户只能删除自己创建的酒店
-    if (req.user?.role !== 'admin' && hotel.creator.toString() !== req.user?._id?.toString()) {
+    if (!['admin', 'super_admin'].includes(req.user?.role || '') && hotel.creator.toString() !== req.user?._id?.toString()) {
       sendError(res, 403, '没有权限删除此酒店');
       return;
     }
@@ -174,7 +174,7 @@ export const submitForAudit = async (req: AuthRequest, res: Response): Promise<v
     }
 
     // 权限检查：商户只能提交自己创建的酒店
-    if (req.user?.role !== 'admin' && hotel.creator.toString() !== req.user?._id?.toString()) {
+    if (!['admin', 'super_admin'].includes(req.user?.role || '') && hotel.creator.toString() !== req.user?._id?.toString()) {
       sendError(res, 403, '没有权限提交此酒店');
       return;
     }
@@ -237,7 +237,7 @@ export const toggleOnline = async (req: AuthRequest, res: Response): Promise<voi
     }
 
     // 权限检查：商户只能操作自己创建的酒店
-    if (req.user?.role !== 'admin' && hotel.creator.toString() !== req.user?._id?.toString()) {
+    if (!['admin', 'super_admin'].includes(req.user?.role || '') && hotel.creator.toString() !== req.user?._id?.toString()) {
       sendError(res, 403, '没有权限操作此酒店');
       return;
     }
@@ -263,7 +263,7 @@ export const getHotelStats = async (req: AuthRequest, res: Response): Promise<vo
     const matchStage: any = {};
     
     // 权限隔离：商户只能看到自己酒店的统计
-    if (req.user?.role !== 'admin') {
+    if (!['admin', 'super_admin'].includes(req.user?.role || '')) {
       matchStage.creator = req.user?._id;
     }
 

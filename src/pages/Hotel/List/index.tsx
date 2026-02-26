@@ -63,7 +63,7 @@ const HotelListPage: React.FC = () => {
 
   const user = localStorage.getItem('currentUser');
   const userData = user ? JSON.parse(user) : { role: 'merchant' };
-  const isAdmin = userData.role === 'admin';
+  const isAdmin = userData.role === 'admin' || userData.role === 'super_admin';
 
   const fetchHotels = useCallback(async () => {
     setLoading(true);

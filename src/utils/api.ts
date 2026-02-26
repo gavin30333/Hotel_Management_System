@@ -241,6 +241,16 @@ export const uploadApi = {
   },
 };
 
+export const adminApi = {
+  getAdmins: () => request('/admins'),
+  
+  createAdmin: (username: string, password: string) =>
+    request('/admins', { method: 'POST', body: { username, password } }),
+
+  updateStatus: (id: string, status: string) =>
+    request(`/admins/${id}/status`, { method: 'PUT', body: { status } }),
+};
+
 // 工具函数
 export const isAuthenticated = (): boolean => {
   return !!getToken();
