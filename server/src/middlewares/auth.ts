@@ -45,7 +45,21 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
 
 export const authorize = (...roles: string[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction): void => {
-    if (!req.user || !roles.includes(req.user.role)) {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        message: '未登录',
+      });
+      return;
+    }
+
+    // Allow super_admin to access routes restricted to admin
+    if (req.user.role === 'super_admin' && roles.includes('admin')) {
+      next();
+      return;
+    }
+
+    if (!roles.includes(req.user.role)) {
       res.status(403).json({
         success: false,
         message: '没有权限执行此操作',

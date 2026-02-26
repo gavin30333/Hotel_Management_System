@@ -13,6 +13,11 @@ export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { username, password, role } = req.body;
 
+    if (role === 'super_admin') {
+      sendError(res, 403, '无法注册超级管理员角色');
+      return;
+    }
+
     const existingUser = await User.findOne({ username });
     if (existingUser) {
       sendError(res, 400, '用户名已存在');
@@ -58,6 +63,11 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       sendError(res, 401, '用户名或密码错误');
+      return;
+    }
+
+    if (user.status === 'suspended') {
+      sendError(res, 403, '账户已被禁用，请联系管理员');
       return;
     }
 

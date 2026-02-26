@@ -789,11 +789,15 @@ const seedDatabase = async (): Promise<void> => {
       await User.create({
         username: 'admin',
         password: 'admin123',
-        role: 'admin',
+        role: 'super_admin',
+        status: 'active',
       });
-      console.log('✅ 创建管理员账户: admin / admin123');
+      console.log('✅ 创建超级管理员账户: admin / admin123');
     } else {
-      console.log('ℹ️ 管理员账户已存在');
+      existingAdmin.role = 'super_admin';
+      existingAdmin.status = 'active';
+      await existingAdmin.save();
+      console.log('✅ 更新管理员账户为超级管理员');
     }
 
     const existingMerchant = await User.findOne({ username: 'merchant' });
@@ -874,7 +878,7 @@ const seedDatabase = async (): Promise<void> => {
     console.log(`  - 已下线: ${await Hotel.countDocuments({ status: 'offline' })} 家`);
     
     console.log('\n👤 测试账户:');
-    console.log('  管理员: admin / admin123 (可查看所有酒店)');
+    console.log('  超级管理员: admin / admin123 (可查看所有酒店)');
     console.log('  商户1: merchant / merchant123 (可查看自己的酒店)');
     console.log('  商户2: merchant2 / merchant123 (可查看自己的酒店)');
     console.log('  商户3: merchant3 / merchant123 (可查看自己的酒店)');
